@@ -30,6 +30,9 @@
   input[type="checkbox"] {
     margin-right: 6px;
   }
+  input[type="range"] {
+    width: 100%;
+  }
   button {
     margin-top: 15px;
     padding: 10px;
@@ -52,11 +55,8 @@
 <body>
 <h1>OSRS Herb Run Calculator</h1>
 <form id="herbForm">
-  <label for="seed">Seed Type:</label>
-  <select id="seed">
-    <option value="ranarr_seed">Ranarr</option>
-    <option value="snapdragon_seed">Snapdragon</option>
-  </select>
+  <label for="seedSlider">Seed Type: <span id="seedLabel">Ranarr</span></label>
+  <input type="range" id="seedSlider" min="0" max="1" step="1" value="0" />
 
   <label for="compost">Compost Type:</label>
   <select id="compost">
@@ -143,6 +143,8 @@ function calculateProfit(seed, compost, output, patches, deathsChecked, secateur
   const outputPrice = getPrice(outputID);
   let totalOutputValue = totalHerbs * outputPrice;
 
+  const compostCost = compost === 'ultracompost' ? getPrice(itemIDs.ultracompost) * patches : 0;
+
   if (output === 'potion') {
     const vialPrice = getPrice(itemIDs.vial);
     const secondID = herbType === 'ranarr' ? itemIDs.snape_grass : itemIDs.crushed_nest;
@@ -150,7 +152,6 @@ function calculateProfit(seed, compost, output, patches, deathsChecked, secateur
     totalOutputValue -= totalHerbs * (vialPrice + secondPrice);
   }
 
-  const compostCost = compost === 'ultracompost' ? getPrice(itemIDs.ultracompost) * patches : 0;
   const netProfit = totalOutputValue - seedCost - compostCost;
 
   return {
@@ -162,9 +163,9 @@ function calculateProfit(seed, compost, output, patches, deathsChecked, secateur
   };
 }
 
-function updateOutputOptions(seed) {
+function updateOutputOptions(seedKey) {
   const outputSelect = document.getElementById('output');
-  const herbType = seed.includes('ranarr') ? 'ranarr' : 'snapdragon';
+  const herbType = seedKey.includes('ranarr') ? 'ranarr' : 'snapdragon';
 
   const options = {
     ranarr: [
@@ -193,14 +194,14 @@ function updateOutputOptions(seed) {
 fetchPrices().then(() => {
   document.getElementById('herbForm').addEventListener('submit', function(e) {
     e.preventDefault();
-    const seed = document.getElementById('seed').value;
+    const seedKey = document.getElementById('seedSlider').value === '0' ? 'ranarr_seed' : 'snapdragon_seed';
     const compost = document.getElementById('compost').value;
     const output = document.getElementById('output').value;
     const patches = parseInt(document.getElementById('patches').value, 10);
     const deathsChecked = document.getElementById('deaths').checked;
     const secateursChecked = document.getElementById('secateurs').checked;
 
-    const result = calculateProfit(seed, compost, output, patches, deathsChecked, secateursChecked);
+    const result = calculateProfit(seedKey, compost, output, patches, deathsChecked, secateursChecked);
 
     document.getElementById('result').innerHTML = `
       <strong>Total Herbs:</strong> ${result.totalHerbs.toFixed(1)}<br>
@@ -211,11 +212,14 @@ fetchPrices().then(() => {
     `;
   });
 
-  updateOutputOptions(document.getElementById('seed').value);
+  updateOutputOptions('ranarr_seed');
 });
 
-document.getElementById('seed').addEventListener('change', function () {
-  updateOutputOptions(this.value);
+document.getElementById('seedSlider').addEventListener('input', function () {
+  const label = this.value === '0' ? 'Ranarr' : 'Snapdragon';
+  document.getElementById('seedLabel').textContent = label;
+  const seedKey = this.value === '0' ? 'ranarr_seed' : 'snapdragon_seed';
+  updateOutputOptions(seedKey);
 });
 </script>
 </body>
