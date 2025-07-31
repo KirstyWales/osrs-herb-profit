@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>OSRS Herb Farming Profit Calculator</title>
+<title>OSRS Multi-Herb Farming Profit Calculator</title>
 <style>
   body {
     background: #111;
@@ -17,7 +17,7 @@
     display: block;
     margin: 10px 0 5px;
   }
-  input[type="number"], select {
+  input[type="number"] {
     width: 100%;
     padding: 8px;
     font-size: 1rem;
@@ -68,13 +68,14 @@
 </head>
 <body>
 
-<h1>OSRS Herb Farming Profit Calculator</h1>
+<h1>OSRS Multi-Herb Farming Profit Calculator</h1>
 
 <form id="calcForm">
+
   <label for="patches">Number of farming patches (1–12):</label>
   <input type="number" id="patches" name="patches" value="8" min="1" max="12" required />
 
-  <label for="baseYield">Base herbs per patch (e.g. 4.4 for Ranarr):</label>
+  <label for="baseYield">Base herbs per patch (Ranarr):</label>
   <input type="number" id="baseYield" name="baseYield" step="0.1" value="4.4" min="0" required />
 
   <label class="checkbox-label">
@@ -106,24 +107,6 @@
     Hard Kourend & Kebos Diary (+5% yield)
   </label>
 
-  <label for="seedID">Ranarr seed item ID (for price lookup):</label>
-  <input type="number" id="seedID" value="5295" required />
-
-  <label for="herbID">Clean Ranarr herb item ID (for price lookup):</label>
-  <input type="number" id="herbID" value="257" required />
-
-  <label for="secondaryID">Snape grass item ID (for price lookup):</label>
-  <input type="number" id="secondaryID" value="231" required />
-
-  <label for="vialID">Vial of water item ID (for price lookup):</label>
-  <input type="number" id="vialID" value="227" required />
-
-  <label for="ultraCompostID">Ultracompost item ID (for price lookup):</label>
-  <input type="number" id="ultraCompostID" value="21483" required />
-
-  <label for="potionID">3-dose Prayer potion item ID (for price lookup):</label>
-  <input type="number" id="potionID" value="2434" required />
-
   <button type="submit">Calculate Profit</button>
 </form>
 
@@ -133,6 +116,40 @@
   const API_URL = 'https://prices.runescape.wiki/api/v1/osrs/latest';
   const form = document.getElementById('calcForm');
   const resultsDiv = document.getElementById('results');
+
+  // Hardcoded item IDs per herb/potion combo (3-dose potions)
+  // Ranarr → Prayer Potion (3-dose)
+  // Toadflax → Saradomin Brew (3-dose)
+  // Snapdragon → Super Restore (3-dose)
+  const HERBS = [
+    {
+      name: 'Ranarr',
+      seedID: 5295,
+      herbID: 257,
+      secondaryID: 231,     // Snape grass
+      potionID: 2434,       // Prayer potion (3-dose)
+      baseYield: 4.4
+    },
+    {
+      name: 'Toadflax',
+      seedID: 5297,
+      herbID: 2998,
+      secondaryID: 6693,    // Crushed nest
+      potionID: 6685,       // Saradomin brew (3-dose)
+      baseYield: 4.3
+    },
+    {
+      name: 'Snapdragon',
+      seedID: 5301,
+      herbID: 3000,
+      secondaryID: 3025,    // Red spider's eggs
+      potionID: 3026,       // Super restore (3-dose)
+      baseYield: 3.8
+    }
+  ];
+
+  // Ultracompost item ID fixed
+  const ULTRACOMPOST_ID = 21483;
 
   let livePrices = {};
 
@@ -156,9 +173,8 @@
     await fetchLivePrices();
 
     const patches = Number(form.patches.value);
-    const baseYield = Number(form.baseYield.value);
 
-    // Sum yield bonuses additively (change if you want multiplicative)
+    // Calculate total yield multiplier from all bonuses selected
     let yieldBonus = 0;
     if (form.magicSecateurs.checked) yieldBonus += 0.10;
     if (form.farmingCape.checked) yieldBonus += 0.05;
@@ -168,50 +184,58 @@
     if (form.catherbyDiaryElite.checked) yieldBonus += 0.15;
     if (form.kourendDiary.checked) yieldBonus += 0.05;
 
-    const totalHerbsPerPatch = baseYield * (1 + yieldBonus);
-
-    const seedID = Number(form.seedID.value);
-    const herbID = Number(form.herbID.value);
-    const secondaryID = Number(form.secondaryID.value);
-    const vialID = Number(form.vialID.value);
-    const ultraCompostID = Number(form.ultraCompostID.value);
-    const potionID = Number(form.potionID.value);
-
-    // Prices
-    const seedPrice = getPrice(seedID);
-    const herbPrice = getPrice(herbID);
-    const secondaryPrice = getPrice(secondaryID);
-    const vialPrice = getPrice(vialID);
-    const compostPrice = getPrice(ultraCompostID);
-    const potionPrice = getPrice(potionID);
-
-    // Costs
-    const totalHerbs = totalHerbsPerPatch * patches;
-
-    const seedCost = seedPrice * patches; // per patch
-    const compostCost = compostPrice * patches; // per patch
-    const secondaryCost = secondaryPrice * totalHerbs; // per herb
-    const vialCost = vialPrice * totalHerbs; // per herb
-
-    // Revenue from selling potions (1 herb = 1 potion)
-    const revenue = potionPrice * totalHerbs;
-
-    // Profit
-    const profit = revenue - (seedCost + compostCost + secondaryCost + vialCost);
-
-    resultsDiv.innerHTML = `
-      <h2>Results</h2>
+    // Start building results HTML
+    let html = `<h2>Results</h2>
       <table>
-        <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Total Herbs Harvested</td><td>${totalHerbs.toFixed(2)}</td></tr>
-        <tr><td>Seed Cost (gp)</td><td>${seedCost.toLocaleString()}</td></tr>
-        <tr><td>Compost Cost (gp)</td><td>${compostCost.toLocaleString()}</td></tr>
-        <tr><td>Secondary Ingredient Cost (gp)</td><td>${secondaryCost.toLocaleString()}</td></tr>
-        <tr><td>Vial Cost (gp)</td><td>${vialCost.toLocaleString()}</td></tr>
-        <tr><td>Revenue from Potion Sales (gp)</td><td>${revenue.toLocaleString()}</td></tr>
-        <tr><td><strong>Net Profit (gp)</strong></td><td><strong>${profit.toLocaleString()}</strong></td></tr>
-      </table>
-    `;
+      <thead>
+        <tr>
+          <th>Potion</th>
+          <th>Total Herbs</th>
+          <th>Seed Cost (gp)</th>
+          <th>Compost Cost (gp)</th>
+          <th>Secondary Cost (gp)</th>
+          <th>Vial Cost (gp)</th>
+          <th>Revenue (gp)</th>
+          <th>Net Profit (gp)</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+    for (const herb of HERBS) {
+      const baseYield = herb.baseYield;
+      const totalHerbsPerPatch = baseYield * (1 + yieldBonus);
+      const totalHerbs = totalHerbsPerPatch * patches;
+
+      // Prices from API
+      const seedPrice = getPrice(herb.seedID);
+      const compostPrice = getPrice(ULTRACOMPOST_ID);
+      const secondaryPrice = getPrice(herb.secondaryID);
+      const vialPrice = getPrice(227); // vial of water fixed ID
+      const potionPrice = getPrice(herb.potionID);
+
+      const seedCost = seedPrice * patches;
+      const compostCost = compostPrice * patches;
+      const secondaryCost = secondaryPrice * totalHerbs;
+      const vialCost = vialPrice * totalHerbs;
+      const revenue = potionPrice * totalHerbs;
+
+      const profit = revenue - (seedCost + compostCost + secondaryCost + vialCost);
+
+      html += `
+      <tr>
+        <td>${herb.name} Potion</td>
+        <td>${totalHerbs.toFixed(2)}</td>
+        <td>${seedCost.toLocaleString()}</td>
+        <td>${compostCost.toLocaleString()}</td>
+        <td>${secondaryCost.toLocaleString()}</td>
+        <td>${vialCost.toLocaleString()}</td>
+        <td>${revenue.toLocaleString()}</td>
+        <td><strong>${profit.toLocaleString()}</strong></td>
+      </tr>`;
+    }
+
+    html += '</tbody></table>';
+    resultsDiv.innerHTML = html;
   });
 </script>
 
