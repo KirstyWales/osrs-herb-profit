@@ -67,17 +67,13 @@
   </select>
 
   <label for="output">Output Type:</label>
-  <select id="output">
-    <option value="grimy">Grimy</option>
-    <option value="clean">Clean</option>
-    <option value="unf">Unf Potion</option>
-    <option value="potion">Brew/Prayer Pot</option>
-  </select>
+  <select id="output"></select>
 
   <label for="patches">Number of Patches:</label>
   <input type="number" id="patches" value="5" min="1" />
 
   <label><input type="checkbox" id="deaths" /> Account for 10% herb deaths</label>
+  <label><input type="checkbox" id="secateurs" /> Using Magic Secateurs</label>
 
   <button type="submit">Calculate Profit</button>
 </form>
@@ -91,10 +87,14 @@ const itemIDs = {
   clean_ranarr: 257,
   unf_ranarr: 99,
   prayer_potion: 2434,
+  snape_grass: 231,
+  vial: 227,
   grimy_snapdragon: 3051,
   clean_snapdragon: 3001,
   unf_snapdragon: 3004,
-  saradomin_brew: 6687
+  saradomin_brew: 6687,
+  crushed_nest: 6693,
+  ultracompost: 21483
 };
 
 const yieldTable = {
@@ -131,26 +131,68 @@ function getPrice(id) {
   return priceData[id]?.high || 0;
 }
 
-function calculateProfit(seed, compost, output, patches, deathsChecked) {
+function calculateProfit(seed, compost, output, patches, deathsChecked, secateursChecked) {
   const herbType = seed.includes('ranarr') ? 'ranarr' : 'snapdragon';
-  const avgYield = yieldTable[compost];
-  const effectiveYield = deathsChecked ? avgYield * 0.9 : avgYield;
-  const totalHerbs = effectiveYield * patches;
+  let avgYield = yieldTable[compost];
+  if (secateursChecked) avgYield *= 1.1;
+  if (deathsChecked) avgYield *= 0.9;
+  const totalHerbs = avgYield * patches;
 
-  const seedCost = getPrice(itemIDs[seed]);
+  const seedCost = getPrice(itemIDs[seed]) * patches;
   const outputID = itemIDs[outputIDs[herbType][output]];
   const outputPrice = getPrice(outputID);
-  const grossProfit = totalHerbs * outputPrice;
-  const totalSeedCost = seedCost * patches;
-  const netProfit = grossProfit - totalSeedCost;
+
+  let totalOutputValue = totalHerbs * outputPrice;
+
+  // Add material costs for potion options
+  if (output === 'potion') {
+    const vialPrice = getPrice(itemIDs.vial);
+    const secondID = herbType === 'ranarr' ? itemIDs.snape_grass : itemIDs.crushed_nest;
+    const secondPrice = getPrice(secondID);
+    const materialCost = (vialPrice + secondPrice) * totalHerbs;
+    totalOutputValue -= materialCost;
+  }
+
+  // Compost cost
+  const compostCost = compost === 'ultracompost' ? getPrice(itemIDs.ultracompost) * patches : 0;
+
+  const netProfit = totalOutputValue - seedCost - compostCost;
 
   return {
     outputPrice,
     seedCost,
-    grossProfit,
+    totalOutputValue,
     netProfit,
     totalHerbs
   };
+}
+
+function updateOutputOptions(seed) {
+  const outputSelect = document.getElementById('output');
+  const herbType = seed.includes('ranarr') ? 'ranarr' : 'snapdragon';
+
+  const options = {
+    ranarr: [
+      { value: 'grimy', label: 'Grimy' },
+      { value: 'clean', label: 'Clean' },
+      { value: 'unf', label: 'Unf Potion' },
+      { value: 'potion', label: 'Prayer Potion' }
+    ],
+    snapdragon: [
+      { value: 'grimy', label: 'Grimy' },
+      { value: 'clean', label: 'Clean' },
+      { value: 'unf', label: 'Unf Potion' },
+      { value: 'potion', label: 'Saradomin Brew' }
+    ]
+  };
+
+  outputSelect.innerHTML = '';
+  options[herbType].forEach(opt => {
+    const option = document.createElement('option');
+    option.value = opt.value;
+    option.textContent = opt.label;
+    outputSelect.appendChild(option);
+  });
 }
 
 fetchPrices().then(() => {
@@ -161,17 +203,24 @@ fetchPrices().then(() => {
     const output = document.getElementById('output').value;
     const patches = parseInt(document.getElementById('patches').value, 10);
     const deathsChecked = document.getElementById('deaths').checked;
+    const secateursChecked = document.getElementById('secateurs').checked;
 
-    const result = calculateProfit(seed, compost, output, patches, deathsChecked);
+    const result = calculateProfit(seed, compost, output, patches, deathsChecked, secateursChecked);
 
     document.getElementById('result').innerHTML = `
       <strong>Total Herbs:</strong> ${result.totalHerbs.toFixed(1)}<br>
       <strong>Herb Price:</strong> ${result.outputPrice.toLocaleString()} gp<br>
-      <strong>Seed Cost Each:</strong> ${result.seedCost.toLocaleString()} gp<br>
-      <strong>Total Gross Profit:</strong> ${result.grossProfit.toLocaleString()} gp<br>
+      <strong>Total Output Value:</strong> ${result.totalOutputValue.toLocaleString()} gp<br>
+      <strong>Total Seed Cost:</strong> ${result.seedCost.toLocaleString()} gp<br>
       <strong>Total Net Profit:</strong> ${result.netProfit.toLocaleString()} gp
     `;
   });
+
+  updateOutputOptions(document.getElementById('seed').value);
+});
+
+document.getElementById('seed').addEventListener('change', function () {
+  updateOutputOptions(this.value);
 });
 </script>
 </body>
