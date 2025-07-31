@@ -149,7 +149,10 @@ function calculateProfit(seed, compost, output, patches, deathsChecked, secateur
     const vialPrice = getPrice(itemIDs.vial);
     const secondID = herbType === 'ranarr' ? itemIDs.snape_grass : itemIDs.crushed_nest;
     const secondPrice = getPrice(secondID);
-    totalOutputValue -= totalHerbs * (vialPrice + secondPrice);
+    const potionsMade = Math.floor(totalHerbs / 3);
+    totalOutputValue = potionsMade * outputPrice;
+    const potionCosts = potionsMade * (vialPrice + secondPrice);
+    totalOutputValue -= potionCosts;
   }
 
   const netProfit = totalOutputValue - seedCost - compostCost;
