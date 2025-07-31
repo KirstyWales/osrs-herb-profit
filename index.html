@@ -110,8 +110,8 @@
   // Constants & config
   const API_URL = 'https://prices.runescape.wiki/api/v1/osrs/latest';
 
-  // Base herbs per patch, fixed average values from OSRS wiki/herb farming guides
-  const BASE_HERBS_PER_PATCH = 6;
+  // Base herbs per patch, your average yield
+  const BASE_HERBS_PER_PATCH = 7;
 
   // Compost multipliers
   const COMPOST_MULTIPLIERS = {
@@ -223,32 +223,26 @@
   // Main profit calculator function, per potion
   // Returns an object with details about costs, revenue, and net profit
   function calculatePotionProfit(potion, patches, compostType, secateurs, deaths, deathPercent, sellPrice) {
-    // Compost multiplier
     const compostMultiplier = COMPOST_MULTIPLIERS[compostType] || 1.0;
-
-    // Secateurs multiplier
     const secateursMultiplier = secateurs ? 1.1 : 1.0;
 
-    // Death rate multiplier
-    const deathMultiplier = deaths ? (1 - (deathPercent / 100)) : 1.0;
+    // Ignore deaths multiplier for now or handle as before
+    // const deathMultiplier = deaths ? (1 - (deathPercent / 100)) : 1.0;
 
-    // Total herbs harvested (base * multipliers * patches)
-    const totalHerbs = BASE_HERBS_PER_PATCH * compostMultiplier * secateursMultiplier * deathMultiplier * patches;
+    const totalHerbs = BASE_HERBS_PER_PATCH * compostMultiplier * secateursMultiplier * patches;
 
-    // Costs
-    const seedCost = getPrice(potion.seedID) * patches;
-    const compostCost = compostType === 'none' ? 0 : getPrice(COMPOST_IDS[compostType]) * patches;
+    const seedPrice = getPrice(potion.seedID);
+    const seedCostPerHerb = seedPrice / BASE_HERBS_PER_PATCH;
+    const seedCost = seedCostPerHerb * totalHerbs;
+
+    const compostCost = (compostType === 'none' ? 0 : getPrice(COMPOST_IDS[compostType]) * patches);
     const secondaryCost = getPrice(potion.secondaryID) * totalHerbs;
     const vialCost = getPrice(potion.vialID) * totalHerbs;
 
-    // Revenue
-    // Sell price is per 3-dose potion, so convert to gp per herb by dividing sellPrice by 3
     const revenue = (sellPrice / 3) * totalHerbs;
 
-    // Net profit
     const netProfit = revenue - (seedCost + compostCost + secondaryCost + vialCost);
 
-    // Return all data
     return {
       name: potion.name,
       totalHerbs: totalHerbs.toFixed(1),
