@@ -73,7 +73,7 @@
   <input type="number" id="patches" value="5" min="1" />
 
   <label><input type="checkbox" id="deaths" /> Account for 10% herb deaths</label>
-  <label><input type="checkbox" id="secateurs" /> Using Magic Secateurs</label>
+  <label><input type="checkbox" id="secateurs" /> Using Magic Secateurs (+10% yield)</label>
 
   <button type="submit">Calculate Profit</button>
 </form>
@@ -141,21 +141,16 @@ function calculateProfit(seed, compost, output, patches, deathsChecked, secateur
   const seedCost = getPrice(itemIDs[seed]) * patches;
   const outputID = itemIDs[outputIDs[herbType][output]];
   const outputPrice = getPrice(outputID);
-
   let totalOutputValue = totalHerbs * outputPrice;
 
-  // Add material costs for potion options
   if (output === 'potion') {
     const vialPrice = getPrice(itemIDs.vial);
     const secondID = herbType === 'ranarr' ? itemIDs.snape_grass : itemIDs.crushed_nest;
     const secondPrice = getPrice(secondID);
-    const materialCost = (vialPrice + secondPrice) * totalHerbs;
-    totalOutputValue -= materialCost;
+    totalOutputValue -= totalHerbs * (vialPrice + secondPrice);
   }
 
-  // Compost cost
   const compostCost = compost === 'ultracompost' ? getPrice(itemIDs.ultracompost) * patches : 0;
-
   const netProfit = totalOutputValue - seedCost - compostCost;
 
   return {
