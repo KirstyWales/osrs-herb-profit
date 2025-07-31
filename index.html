@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OSRS Herb Run Calculator</title>
+<style>
+  body {
+    background: #111;
+    color: #eee;
+    font-family: sans-serif;
+    padding: 20px;
+    max-width: 600px;
+    margin: auto;
+  }
+  h1 {
+    margin-bottom: 10px;
+  }
+  label {
+    display: block;
+    margin: 10px 0 5px;
+  }
+  select, input[type="number"] {
+    width: 100%;
+    padding: 8px;
+    border-radius: 4px;
+    border: none;
+    font-size: 1rem;
+  }
+  input[type="checkbox"] {
+    margin-right: 6px;
+  }
+  button {
+    margin-top: 15px;
+    padding: 10px;
+    font-size: 1rem;
+    border-radius: 4px;
+    border: none;
+    background: #4caf50;
+    color: white;
+    cursor: pointer;
+  }
+  #result {
+    margin-top: 20px;
+    font-size: 1.2rem;
+    background: #222;
+    padding: 10px;
+    border-radius: 6px;
+  }
+</style>
+</head>
+<body>
+<h1>OSRS Herb Run Calculator</h1>
+<form id="herbForm">
+  <label for="seed">Seed Type:</label>
+  <select id="seed">
+    <option value="ranarr_seed">Ranarr</option>
+    <option value="snapdragon_seed">Snapdragon</option>
+  </select>
+
+  <label for="compost">Compost Type:</label>
+  <select id="compost">
+    <option value="none">None</option>
+    <option value="compost">Compost</option>
+    <option value="supercompost">Supercompost</option>
+    <option value="ultracompost">Ultracompost</option>
+  </select>
+
+  <label for="output">Output Type:</label>
+  <select id="output">
+    <option value="grimy">Grimy</option>
+    <option value="clean">Clean</option>
+    <option value="unf">Unf Potion</option>
+    <option value="potion">Brew/Prayer Pot</option>
+  </select>
+
+  <label for="patches">Number of Patches:</label>
+  <input type="number" id="patches" value="5" min="1" />
+
+  <label><input type="checkbox" id="deaths" /> Account for 10% herb deaths</label>
+
+  <button type="submit">Calculate Profit</button>
+</form>
+<div id="result"></div>
+
+<script>
+const itemIDs = {
+  ranarr_seed: 5295,
+  snapdragon_seed: 5300,
+  grimy_ranarr: 207,
+  clean_ranarr: 257,
+  unf_ranarr: 99,
+  prayer_potion: 2434,
+  grimy_snapdragon: 3051,
+  clean_snapdragon: 3001,
+  unf_snapdragon: 3004,
+  saradomin_brew: 6687
+};
+
+const yieldTable = {
+  none: 6,
+  compost: 7,
+  supercompost: 8,
+  ultracompost: 9
+};
+
+const outputIDs = {
+  ranarr: {
+    grimy: 'grimy_ranarr',
+    clean: 'clean_ranarr',
+    unf: 'unf_ranarr',
+    potion: 'prayer_potion'
+  },
+  snapdragon: {
+    grimy: 'grimy_snapdragon',
+    clean: 'clean_snapdragon',
+    unf: 'unf_snapdragon',
+    potion: 'saradomin_brew'
+  }
+};
+
+let priceData = {};
+
+async function fetchPrices() {
+  const res = await fetch('https://prices.runescape.wiki/api/v1/osrs/latest');
+  const json = await res.json();
+  priceData = json.data;
+}
+
+function getPrice(id) {
+  return priceData[id]?.high || 0;
+}
+
+function calculateProfit(seed, compost, output, patches, deathsChecked) {
+  const herbType = seed.includes('ranarr') ? 'ranarr' : 'snapdragon';
+  const avgYield = yieldTable[compost];
+  const effectiveYield = deathsChecked ? avgYield * 0.9 : avgYield;
+  const totalHerbs = effectiveYield * patches;
+
+  const seedCost = getPrice(itemIDs[seed]);
+  const outputID = itemIDs[outputIDs[herbType][output]];
+  const outputPrice = getPrice(outputID);
+  const grossProfit = totalHerbs * outputPrice;
+  const totalSeedCost = seedCost * patches;
+  const netProfit = grossProfit - totalSeedCost;
+
+  return {
+    outputPrice,
+    seedCost,
+    grossProfit,
+    netProfit,
+    totalHerbs
+  };
+}
+
+fetchPrices().then(() => {
+  document.getElementById('herbForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const seed = document.getElementById('seed').value;
+    const compost = document.getElementById('compost').value;
+    const output = document.getElementById('output').value;
+    const patches = parseInt(document.getElementById('patches').value, 10);
+    const deathsChecked = document.getElementById('deaths').checked;
+
+    const result = calculateProfit(seed, compost, output, patches, deathsChecked);
+
+    document.getElementById('result').innerHTML = `
+      <strong>Total Herbs:</strong> ${result.totalHerbs.toFixed(1)}<br>
+      <strong>Herb Price:</strong> ${result.outputPrice.toLocaleString()} gp<br>
+      <strong>Seed Cost Each:</strong> ${result.seedCost.toLocaleString()} gp<br>
+      <strong>Total Gross Profit:</strong> ${result.grossProfit.toLocaleString()} gp<br>
+      <strong>Total Net Profit:</strong> ${result.netProfit.toLocaleString()} gp
+    `;
+  });
+});
+</script>
+</body>
+</html>
