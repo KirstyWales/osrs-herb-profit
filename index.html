@@ -225,12 +225,14 @@
   }
 
   function renderResults(profitResults) {
-    if (!profitResults.length) {
-      resultsDiv.innerHTML = '<p>No results to show.</p>';
-      return;
-    }
+  if (!profitResults.length) {
+    resultsDiv.innerHTML = '<p>No results to show.</p>';
+    return;
+  }
 
-    let html = `<table>
+  // Start building the table
+  let html = `
+    <table>
       <thead>
         <tr>
           <th>Potion</th>
@@ -243,10 +245,13 @@
           <th>Net Profit (gp)</th>
         </tr>
       </thead>
-      <tbody>`;
+      <tbody>
+  `;
 
-    profitResults.forEach(r => {
-      html += `<tr>
+  // Append one row per potion result
+  profitResults.forEach(r => {
+    html += `
+      <tr>
         <td>${r.name}</td>
         <td>${r.totalHerbs}</td>
         <td>${r.seedCost}</td>
@@ -255,13 +260,19 @@
         <td>${r.vialCost}</td>
         <td>${r.revenue}</td>
         <td>${r.netProfit}</td>
-      </
-    });
+      </tr>
+    `;
+  });
 
-    html += '</tbody></table>';
+  // Close out the table
+  html += `
+      </tbody>
+    </table>
+  `;
 
-    resultsDiv.innerHTML = html;
-  }
+  resultsDiv.innerHTML = html;
+}
+
 
   // Initialize app: fetch prices, render form, handle submit
   async function init() {
