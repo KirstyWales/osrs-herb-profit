@@ -66,9 +66,7 @@
 
 <h1>OSRS Potion Profit Calculator</h1>
 
-<!-- User input form -->
 <form id="profitForm">
-
   <label for="patches">Number of farming patches (1–12):</label>
   <input type="number" id="patches" name="patches" value="5" min="1" max="12" required />
 
@@ -94,26 +92,18 @@
 
   <hr />
 
-  <h3>Sell price per finished 3-dose potion (gp):</h3>
-
-  <div id="potionPricesContainer">
-    <!-- Potion sell prices inputs will be generated here -->
-  </div>
+  <h3>Sell price per 3-dose potion made from one herb (gp):</h3>
+  <div id="potionPricesContainer"></div>
 
   <button type="submit">Calculate Profit</button>
-
 </form>
 
 <div id="results"></div>
 
 <script>
-  // Constants & config
   const API_URL = 'https://prices.runescape.wiki/api/v1/osrs/latest';
-
-  // Base herbs per patch, fixed average values from OSRS wiki/herb farming guides
   const BASE_HERBS_PER_PATCH = 6;
 
-  // Compost multipliers
   const COMPOST_MULTIPLIERS = {
     none: 1.0,
     normal: 1.1,
@@ -121,63 +111,51 @@
     ultra: 1.2
   };
 
-  // Potion data modular object
-  // Each potion requires:
-  // - seedID: seed item ID for pricing
-  // - secondaryID: secondary ingredient item ID for pricing
-  // - vialID: vial of water item ID
-  // - name: display name
-  // - defaultSellPrice: fallback sell price if user doesn't input one
   const POTIONS = [
     {
       key: 'prayer_potion',
       name: 'Prayer Potion',
-      seedID: 5295,         // Ranarr seed
-      secondaryID: 231,     // Snape grass
-      vialID: 227,          // Vial of water
+      seedID: 5295,
+      secondaryID: 231,
+      vialID: 227,
       defaultSellPrice: 10000
     },
     {
       key: 'saradomin_brew',
       name: 'Saradomin Brew',
-      seedID: 5300,         // Snapdragon seed
-      secondaryID: 6693,    // Crushed nest
+      seedID: 5300,
+      secondaryID: 6693,
       vialID: 227,
       defaultSellPrice: 13000
     },
     {
       key: 'super_restore',
       name: 'Super Restore',
-      seedID: 3049,         // Toadflax seed
-      secondaryID: 3025,    // Red spider's eggs
+      seedID: 3049,
+      secondaryID: 3025,
       vialID: 227,
       defaultSellPrice: 12000
     }
   ];
 
-  // Variables to hold fetched live prices
   let livePrices = {};
 
-  // Compost item IDs (for price fetching)
   const COMPOST_IDS = {
-    normal: 6032,     // Compost
-    super: 6034,      // Supercompost
-    ultra: 21483      // Ultracompost
+    normal: 6032,
+    super: 6034,
+    ultra: 21483
   };
 
-  // DOM references
   const form = document.getElementById('profitForm');
   const resultsDiv = document.getElementById('results');
   const potionPricesContainer = document.getElementById('potionPricesContainer');
   const deathPercentInput = document.getElementById('deathPercent');
   const deathsToggle = document.getElementById('deathsToggle');
 
-  // Enable/disable death percent input based on checkbox
   deathsToggle.addEventListener('change', () => {
     deathPercentInput.disabled = !deathsToggle.checked;
   });
 
-  // Fetch live prices from API
   async function fetchLivePrices() {
     try {
       const response = await fetch(API_URL);
@@ -189,12 +167,10 @@
     }
   }
 
-  // Utility: get price for an item ID or fallback 0
   function getPrice(itemID) {
     return livePrices[itemID]?.high || 0;
   }
 
-  // Dynamically create input fields for potion sell prices
   function renderPotionPriceInputs() {
     potionPricesContainer.innerHTML = '';
     POTIONS.forEach(p => {
@@ -203,7 +179,7 @@
 
       const label = document.createElement('label');
       label.htmlFor = `sellPrice_${p.key}`;
-      label.textContent = `${p.name} sell price per 3-dose potion (gp):`;
+      label.textContent = `${p.name} sell price per 3-dose potion made from one herb (gp):`;
       wrapper.appendChild(label);
 
       const input = document.createElement('input');
@@ -220,35 +196,22 @@
     });
   }
 
-  // Main profit calculator function, per potion
-  // Returns an object with details about costs, revenue, and net profit
   function calculatePotionProfit(potion, patches, compostType, secateurs, deaths, deathPercent, sellPrice) {
-    // Compost multiplier
     const compostMultiplier = COMPOST_MULTIPLIERS[compostType] || 1.0;
-
-    // Secateurs multiplier
     const secateursMultiplier = secateurs ? 1.1 : 1.0;
-
-    // Death rate multiplier
     const deathMultiplier = deaths ? (1 - (deathPercent / 100)) : 1.0;
 
-    // Total herbs harvested (base * multipliers * patches)
     const totalHerbs = BASE_HERBS_PER_PATCH * compostMultiplier * secateursMultiplier * deathMultiplier * patches;
 
-    // Costs
     const seedCost = getPrice(potion.seedID) * patches;
     const compostCost = compostType === 'none' ? 0 : getPrice(COMPOST_IDS[compostType]) * patches;
     const secondaryCost = getPrice(potion.secondaryID) * totalHerbs;
     const vialCost = getPrice(potion.vialID) * totalHerbs;
 
-    // Revenue
-    // Sell price is per 3-dose potion, so convert to gp per herb by dividing sellPrice by 3
-    const revenue = (sellPrice / 3) * totalHerbs;
+    const revenue = sellPrice * totalHerbs;
 
-    // Net profit
     const netProfit = revenue - (seedCost + compostCost + secondaryCost + vialCost);
 
-    // Return all data
     return {
       name: potion.name,
       totalHerbs: totalHerbs.toFixed(1),
@@ -261,7 +224,6 @@
     };
   }
 
-  // Render results table with profit comparisons
   function renderResults(profitResults) {
     if (!profitResults.length) {
       resultsDiv.innerHTML = '<p>No results to show.</p>';
@@ -293,7 +255,7 @@
         <td>${r.vialCost}</td>
         <td>${r.revenue}</td>
         <td>${r.netProfit}</td>
-      </tr>`;
+      </
     });
 
     html += '</tbody></table>';
