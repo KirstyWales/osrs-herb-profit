@@ -37,12 +37,12 @@
     const API_URL = "https://prices.runescape.wiki/api/v1/osrs/latest";
 
     const ids = {
-      ranarr: { seed: 5295, herb: 257, secondary: 231, potion: 99 },
-      snapdragon: { seed: 5300, herb: 3000, secondary: 221, potion: 3004 },
-      toadflax: { seed: 5296, herb: 2998, secondary: 223, potion: 3030 },
-      vial: 227,
-      ultracompost: 21483
-    };
+  ranarr: { seed: 5295, herb: 257, secondary: 231, unf: 91, potion: 99 },       // 91 is unfinished ranarr potion
+  snapdragon: { seed: 5300, herb: 3000, secondary: 221, unf: 3024, potion: 3026 }, // 3024 unfinished super restore
+  toadflax: { seed: 5296, herb: 2998, secondary: 223, unf: 3002, potion: 3030 }, // 3002 unfinished saradomin brew
+  vial: 227,
+  ultracompost: 21483
+};
 
     async function fetchPrices() {
       const response = await fetch(API_URL);
@@ -69,7 +69,7 @@
       if (productForm === "grimy") {
         revenue = herbsHarvested * herbPrice;
       } else if (productForm === "unf") {
-        revenue = herbsHarvested * (herbPrice + vialCost);
+        revenue = herbsHarvested * prices[ids[herbType].unf].high;
       } else if (productForm === "finished") {
         revenue = herbsHarvested * potionPrice;
       }
