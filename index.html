@@ -3,15 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>OSRS Herb Farming Profit Calculator</title>
+  <title>OSRS Adjusted GP/XP Calculator</title>
   <style>
-    body { background: #111; color: #eee; font-family: sans-serif; padding: 2rem; }
-    label, select, input, button { display: block; margin: 1rem 0; }
+    body {
+      background: #111;
+      color: #eee;
+      font-family: sans-serif;
+      padding: 2rem;
+    }
+    label, select, input, button {
+      display: block;
+      margin: 1rem 0;
+    }
   </style>
 </head>
 <body>
-  <h1>OSRS Herb Farming Profit Calculator</h1>
-  <p><em>This calculator assumes the use of ultracompost and Magic Secateurs, yielding an average of 8.5 herbs per patch.</em></p>
+  <h1>Herblore GP per XP (Finished Potion vs Grimy Herb)</h1>
+  <p><em>Assumes ultracompost and Magic Secateurs, yielding 8.5 herbs per patch.</em></p>
 
   <label for="herbType">Herb Type:</label>
   <select id="herbType">
@@ -20,17 +28,10 @@
     <option value="toadflax">Toadflax</option>
   </select>
 
-  <label for="productForm">Product Form:</label>
-  <select id="productForm">
-    <option value="grimy">Grimy Herb</option>
-    <option value="unf">Unfinished Potion</option>
-    <option value="finished">Finished Potion</option>
-  </select>
-
   <label for="patches">Number of Herb Patches:</label>
   <input type="number" id="patches" value="5" min="1" />
 
-  <button onclick="calculateProfit()">Calculate Profit</button>
+  <button onclick="calculateProfit()">Calculate</button>
 
   <pre id="result"></pre>
 
@@ -38,9 +39,9 @@
     const API_URL = "https://prices.runescape.wiki/api/v1/osrs/latest";
 
     const ids = {
-      ranarr: { seed: 5295, herb: 257, secondary: 231, unf: 91, potion: 139 },
-      snapdragon: { seed: 5300, herb: 3000, secondary: 223, unf: 3004, potion: 3026 },
-      toadflax: { seed: 5296, herb: 2998, secondary: 6693, unf: 3002, potion: 6687 },
+      ranarr: { seed: 5295, herb: 257, secondary: 231, potion: 139 },
+      snapdragon: { seed: 5300, herb: 3000, secondary: 223, potion: 3026 },
+      toadflax: { seed: 5296, herb: 2998, secondary: 6693, potion: 6687 },
       vial: 227,
       ultracompost: 21483
     };
@@ -53,7 +54,6 @@
 
     async function calculateProfit() {
       const herbType = document.getElementById("herbType").value;
-      const productForm = document.getElementById("productForm").value;
       const patches = parseInt(document.getElementById("patches").value);
       const herbsHarvested = patches * 8.5;
 
@@ -65,61 +65,44 @@
       const vialCost = prices[ids.vial].high;
       const secondaryCost = prices[ids[herbType].secondary].high;
       const potionPrice = prices[ids[herbType].potion].high;
-      const unfPrice = prices[ids[herbType].unf].high;
 
-      let revenue = 0;
-      if (productForm === "grimy") {
-        revenue = herbsHarvested * herbPrice;
-      } else if (productForm === "unf") {
-        revenue = herbsHarvested * unfPrice;
-      } else if (productForm === "finished") {
-        revenue = herbsHarvested * potionPrice;
-      }
+      // XP per herb type
+      const xpPerHerb = {
+        ranarr: 7.5 + 87.5,
+        snapdragon: 11.8 + 142.5,
+        toadflax: 8.0 + 180
+      }[herbType];
 
-      let cost = (seedCost + compostCost) * patches;
-      if (productForm !== "grimy") {
-        cost += herbsHarvested * vialCost;
-      }
-      if (productForm === "finished") {
-        cost += herbsHarvested * secondaryCost;
-      }
+      const totalXP = herbsHarvested * xpPerHerb;
 
-      const profit = revenue - cost;
+      // Cost and revenue for finished potion path
+      const potionCost =
+        (seedCost + compostCost) * patches +
+        herbsHarvested * vialCost +
+        herbsHarvested * secondaryCost;
+      const potionRevenue = herbsHarvested * potionPrice;
+      const potionProfit = potionRevenue - potionCost;
 
-      let herbloreXP = 0;
-      let gpPerXP = null;
-      let adjustedGpPerXp = null;
+      // Cost and revenue for grimy herb path
+      const grimyCost = (seedCost + compostCost) * patches;
+      const grimyRevenue = herbsHarvested * herbPrice;
+      const grimyProfit = grimyRevenue - grimyCost;
 
-      if (productForm === "finished") {
-        const xpPerPotion = {
-          ranarr: 7.5 + 87.5,
-          snapdragon: 11.8 + 142.5,
-          toadflax: 8.0 + 180
-        };
-
-        herbloreXP = herbsHarvested * xpPerPotion[herbType];
-        gpPerXP = profit / herbloreXP;
-
-        // Compare against actual grimy profit
-        const grimyRevenue = herbsHarvested * herbPrice;
-        const grimyProfit = grimyRevenue - cost;
-        const trueGpGain = profit - grimyProfit;
-        adjustedGpPerXp = trueGpGain / herbloreXP;
-      }
+      // Extra profit from potion path
+      const extraProfit = potionProfit - grimyProfit;
+      const adjustedGpPerXp = extraProfit / totalXP;
 
       document.getElementById("result").textContent = `
 ---
 Herb Type: ${herbType.charAt(0).toUpperCase() + herbType.slice(1)}
-Product Form: ${productForm.replace("unf", "Unfinished").replace("grimy", "Grimy").replace("finished", "Finished")}
 Patches: ${patches}
 Herbs Harvested: ${herbsHarvested.toFixed(1)}
 
-Revenue: ${revenue.toLocaleString()} gp
-Cost: ${cost.toLocaleString()} gp
-Profit: ${profit.toLocaleString()} gp
-${herbloreXP > 0 ? `Herblore XP per Run: ${herbloreXP.toLocaleString()} xp` : ""}
-${gpPerXP !== null ? `GP per XP (raw profit): ${gpPerXP.toFixed(2)} gp/xp` : ""}
-${adjustedGpPerXp !== null ? `GP per XP (vs. selling herbs with costs): ${adjustedGpPerXp.toFixed(2)} gp/xp` : ""}
+Finished Potion Profit: ${potionProfit.toLocaleString()} gp
+Grimy Herb Profit: ${grimyProfit.toLocaleString()} gp
+
+Herblore XP Gained: ${totalXP.toLocaleString()} xp
+Adjusted GP per XP (extra from potions): ${adjustedGpPerXp.toFixed(2)} gp/xp
 `;
     }
   </script>
