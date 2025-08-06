@@ -86,10 +86,9 @@
 
       const profit = revenue - cost;
 
-            let herbloreXP = 0;
+      let herbloreXP = 0;
       let gpPerXP = null;
-      let gpPerXpTrue = null;
-      let trueGpPerXp = null;
+      let adjustedGpPerXp = null;
 
       if (productForm === "finished") {
         const xpPerPotion = {
@@ -99,21 +98,16 @@
         };
 
         herbloreXP = herbsHarvested * xpPerPotion[herbType];
-
         gpPerXP = profit / herbloreXP;
 
+        // Compare against actual grimy profit
         const grimyRevenue = herbsHarvested * herbPrice;
-        const netGainOverSelling = revenue - grimyRevenue;
-
-        gpPerXpTrue = netGainOverSelling / herbloreXP;
-        trueGpPerXp = (profit - (grimyRevenue - cost)) / herbloreXP;
+        const grimyProfit = grimyRevenue - cost;
+        const trueGpGain = profit - grimyProfit;
+        adjustedGpPerXp = trueGpGain / herbloreXP;
       }
 
-
-      console.log("Prices fetched:", prices);
-      console.log("Calculated profit:", profit);
-
-            document.getElementById("result").textContent = `
+      document.getElementById("result").textContent = `
 ---
 Herb Type: ${herbType.charAt(0).toUpperCase() + herbType.slice(1)}
 Product Form: ${productForm.replace("unf", "Unfinished").replace("grimy", "Grimy").replace("finished", "Finished")}
@@ -125,10 +119,8 @@ Cost: ${cost.toLocaleString()} gp
 Profit: ${profit.toLocaleString()} gp
 ${herbloreXP > 0 ? `Herblore XP per Run: ${herbloreXP.toLocaleString()} xp` : ""}
 ${gpPerXP !== null ? `GP per XP (raw profit): ${gpPerXP.toFixed(2)} gp/xp` : ""}
-${gpPerXpTrue !== null ? `GP per XP (vs. selling herbs): ${gpPerXpTrue.toFixed(2)} gp/xp` : ""}
-${trueGpPerXp !== null ? `Net GP per XP (true cost model): ${trueGpPerXp.toFixed(2)} gp/xp` : ""}
+${adjustedGpPerXp !== null ? `GP per XP (vs. selling herbs with costs): ${adjustedGpPerXp.toFixed(2)} gp/xp` : ""}
 `;
-
     }
   </script>
 </body>
