@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>OSRS Herb Farming Profit Calculator</title>
   <style>
     body { background: #111; color: #eee; font-family: sans-serif; padding: 2rem; }
@@ -11,7 +11,6 @@
 </head>
 <body>
   <h1>OSRS Herb Farming Profit Calculator</h1>
-
   <p><em>This calculator assumes the use of ultracompost and Magic Secateurs, yielding an average of 8.5 herbs per patch.</em></p>
 
   <label for="herbType">Herb Type:</label>
@@ -39,12 +38,12 @@
     const API_URL = "https://prices.runescape.wiki/api/v1/osrs/latest";
 
     const ids = {
-  ranarr: { seed: 5295, herb: 257, secondary: 231, unf: 99, potion: 139 },       // 99 is unfinished ranarr potion
-  snapdragon: { seed: 5300, herb: 3000, secondary: 223, unf: 3004, potion: 3026 }, // 3004 unfinished super restore
-  toadflax: { seed: 5296, herb: 2998, secondary: 6693, unf: 3002, potion: 6687 }, // 3002 unfinished saradomin brew
-  vial: 227,
-  ultracompost: 21483
-};
+      ranarr: { seed: 5295, herb: 257, secondary: 231, unf: 91, potion: 139 },
+      snapdragon: { seed: 5300, herb: 3000, secondary: 223, unf: 3004, potion: 3026 },
+      toadflax: { seed: 5296, herb: 2998, secondary: 6693, unf: 3002, potion: 6687 },
+      vial: 227,
+      ultracompost: 21483
+    };
 
     async function fetchPrices() {
       const response = await fetch(API_URL);
@@ -66,12 +65,13 @@
       const vialCost = prices[ids.vial].high;
       const secondaryCost = prices[ids[herbType].secondary].high;
       const potionPrice = prices[ids[herbType].potion].high;
+      const unfPrice = prices[ids[herbType].unf].high;
 
       let revenue = 0;
       if (productForm === "grimy") {
         revenue = herbsHarvested * herbPrice;
       } else if (productForm === "unf") {
-        revenue = herbsHarvested * prices[ids[herbType].unf].high;
+        revenue = herbsHarvested * unfPrice;
       } else if (productForm === "finished") {
         revenue = herbsHarvested * potionPrice;
       }
@@ -87,24 +87,34 @@
       const profit = revenue - cost;
 
       let herbloreXP = 0;
-if (productForm === "finished") {
-      const xpPerPotion = {
-    ranarr: 87.5,
-    snapdragon: 142.5,
-    toadflax: 180
-  };
-  herbloreXP = herbsHarvested * xpPerPotion[herbType];
-  const grimyPrice = prices[ids[herbType].herb].high;
-  const finishedPrice = potionPrice;
-  const netGpCost = (finishedPrice - grimyPrice) * herbsHarvested;
-  const gpPerXpTrue = netGpCost / herbloreXP;
-}
-            let gpPerXP = 0;
-      if (herbloreXP > 0) {
-        ${gpPerXP > 0 ? `GP per XP (true cost): ${gpPerXpTrue.toFixed(2)} gp/xp` : ""}
+      let gpPerXP = 0;
+      let gpPerXpTrue = 0;
+      let trueGpPerXp = 0;
+
+      if (productForm === "finished") {
+        const xpPerPotion = {
+          ranarr: 87.5,
+          snapdragon: 142.5,
+          toadflax: 180
+        };
+        herbloreXP = herbsHarvested * xpPerPotion[herbType];
+
+        // Traditional profit per XP
+        gpPerXP = profit / herbloreXP;
+
+        // Profit compared to selling grimy herbs
+        const grimyRevenue = herbsHarvested * herbPrice;
+        const netGainOverSelling = revenue - grimyRevenue;
+
+        gpPerXpTrue = netGainOverSelling / herbloreXP;
+
+        // Fully loaded cost model considering grimy herb as baseline
+        trueGpPerXp = (profit - (grimyRevenue - cost)) / herbloreXP;
       }
+
       console.log("Prices fetched:", prices);
       console.log("Calculated profit:", profit);
+
       document.getElementById("result").textContent = `
 ---
 Herb Type: ${herbType.charAt(0).toUpperCase() + herbType.slice(1)}
@@ -116,10 +126,11 @@ Revenue: ${revenue.toLocaleString()} gp
 Cost: ${cost.toLocaleString()} gp
 Profit: ${profit.toLocaleString()} gp
 ${herbloreXP > 0 ? `Herblore XP per Run: ${herbloreXP.toLocaleString()} xp` : ""}
-${gpPerXP > 0 ? `GP per XP: ${gpPerXP.toFixed(2)} gp/xp` : ""}
+${gpPerXP > 0 ? `GP per XP (raw profit): ${gpPerXP.toFixed(2)} gp/xp` : ""}
+${gpPerXpTrue > 0 ? `GP per XP (vs. selling herbs): ${gpPerXpTrue.toFixed(2)} gp/xp` : ""}
+${trueGpPerXp > 0 ? `Net GP per XP (true cost model): ${trueGpPerXp.toFixed(2)} gp/xp` : ""}
 `;
     }
-
   </script>
 </body>
 </html>
