@@ -95,6 +95,26 @@ if (productForm === "finished") {
   };
   herbloreXP = herbsHarvested * xpPerPotion[herbType];
 }
+            let gpPerXP = 0;
+      if (herbloreXP > 0) {
+        gpPerXP = profit / herbloreXP;
+      }
+
+      document.getElementById("result").textContent = `
+---
+Herb Type: ${herbType.charAt(0).toUpperCase() + herbType.slice(1)}
+Product Form: ${productForm.replace("unf", "Unfinished").replace("grimy", "Grimy").replace("finished", "Finished")}
+Patches: ${patches}
+Herbs Harvested: ${herbsHarvested.toFixed(1)}
+
+Revenue: ${revenue.toLocaleString()} gp
+Cost: ${cost.toLocaleString()} gp
+Profit: ${profit.toLocaleString()} gp
+${herbloreXP > 0 ? `Herblore XP per Run: ${herbloreXP.toLocaleString()} xp` : ""}
+${gpPerXP > 0 ? `GP per XP: ${gpPerXP.toFixed(2)} gp/xp` : ""}
+`;
+    }
+
       document.getElementById("result").textContent = `
 ---
 Herb Type: ${herbType.charAt(0).toUpperCase() + herbType.slice(1)}
