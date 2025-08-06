@@ -88,16 +88,20 @@
 
       let herbloreXP = 0;
 if (productForm === "finished") {
-  const xpPerPotion = {
+      const xpPerPotion = {
     ranarr: 87.5,
     snapdragon: 142.5,
     toadflax: 180
   };
   herbloreXP = herbsHarvested * xpPerPotion[herbType];
+  const grimyPrice = prices[ids[herbType].herb].high;
+  const finishedPrice = potionPrice;
+  const netGpCost = (finishedPrice - grimyPrice) * herbsHarvested;
+  const gpPerXpTrue = netGpCost / herbloreXP;
 }
             let gpPerXP = 0;
       if (herbloreXP > 0) {
-        gpPerXP = profit / herbloreXP;
+        ${gpPerXP > 0 ? `GP per XP (true cost): ${gpPerXpTrue.toFixed(2)} gp/xp` : ""}
       }
       console.log("Prices fetched:", prices);
       console.log("Calculated profit:", profit);
