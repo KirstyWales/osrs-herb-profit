@@ -99,7 +99,8 @@ if (productForm === "finished") {
       if (herbloreXP > 0) {
         gpPerXP = profit / herbloreXP;
       }
-
+      console.log("Prices fetched:", prices);
+      console.log("Calculated profit:", profit);
       document.getElementById("result").textContent = `
 ---
 Herb Type: ${herbType.charAt(0).toUpperCase() + herbType.slice(1)}
