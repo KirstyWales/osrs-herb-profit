@@ -86,6 +86,11 @@
 
       const profit = revenue - cost;
 
+      let prayerXP = 0;
+if (herbType === "ranarr" && productForm === "finished") {
+  prayerXP = herbsHarvested * 87.5;
+}
+
       document.getElementById("result").textContent = `
 ---
 Herb Type: ${herbType.charAt(0).toUpperCase() + herbType.slice(1)}
