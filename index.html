@@ -86,11 +86,15 @@
 
       const profit = revenue - cost;
 
-      let prayerXP = 0;
-if (herbType === "ranarr" && productForm === "finished") {
-  prayerXP = herbsHarvested * 87.5;
+      let herbloreXP = 0;
+if (productForm === "finished") {
+  const xpPerPotion = {
+    ranarr: 87.5,
+    snapdragon: 142.5,
+    toadflax: 180
+  };
+  herbloreXP = herbsHarvested * xpPerPotion[herbType];
 }
-
       document.getElementById("result").textContent = `
 ---
 Herb Type: ${herbType.charAt(0).toUpperCase() + herbType.slice(1)}
@@ -98,6 +102,11 @@ Product Form: ${productForm.replace("unf", "Unfinished").replace("grimy", "Grimy
 Patches: ${patches}
 Herbs Harvested: ${herbsHarvested.toFixed(1)}
 
+Revenue: ${revenue.toLocaleString()} gp
+Cost: ${cost.toLocaleString()} gp
+Profit: ${profit.toLocaleString()} gp
+${herbloreXP > 0 ? `Herblore XP per Run: ${herbloreXP.toLocaleString()} xp` : ""}
+`;
 Revenue: ${revenue.toLocaleString()} gp
 Cost: ${cost.toLocaleString()} gp
 Profit: ${profit.toLocaleString()} gp
