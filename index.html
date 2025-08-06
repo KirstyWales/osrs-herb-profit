@@ -93,10 +93,11 @@
 
       if (productForm === "finished") {
         const xpPerPotion = {
-          ranarr: 87.5,
-          snapdragon: 142.5,
-          toadflax: 180
+          ranarr: 7.5 + 87.5,
+          snapdragon: 11.8 + 142.5,
+          toadflax: 8.0 + 180
         };
+
         herbloreXP = herbsHarvested * xpPerPotion[herbType];
 
         gpPerXP = profit / herbloreXP;
